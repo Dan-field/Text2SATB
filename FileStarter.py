@@ -1,6 +1,18 @@
+####################################################################
+# DF_MusicXML class by Daniel Field                                #
+#                                                                  #
+# This class handles the creation and appending of a MusicXML file #
+#                                                                  #
+# check out www.github.com/dan-field/Text2SATB for info and rights #
+####################################################################
+
+
 # This script will open a new MusicXML file and insert the required header info, etc.
 #
 
+usrTitle = "La La La"
+Title = "Sonification: "+str(usrTitle)
+ProgID = "DF_Text2SATB v0.1"
 usrFileName = raw_input(" please enter a name for the output file ")
 fileName = usrFileName+".musicxml"
 try:
@@ -10,6 +22,12 @@ try:
       file.write("""     "-//Recordare//DTD MusicXML 3.1 Partwise//EN"\n""")
       file.write("""     "http://www.musicxml.org/dtds/partwise.dtd">\n""")
       file.write("""<score-partwise version="3.1">\n""")
+      file.write("""  <work>\n""")
+      file.write("""    <work-title>"""+str(Title)+"""</work-title>\n""")
+      file.write("""  </work>\n""")
+      file.write("""  <identification>\n""")
+      file.write("""    <creator type="composer">"""+str(ProgID)+"""</creator>\n""")
+      file.write("""  </identification>\n""")
       file.write("""  <part-list>\n""")
       file.write("""    <score-part id="P1">\n""")
       file.write("""      <part-name>Soprano</part-name>\n""")
