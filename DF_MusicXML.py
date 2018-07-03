@@ -18,56 +18,82 @@ class DF_MusicXML:
          self.progID = "Dan Field's Sonifier v 0.1"
       else:
          self.progID = progID
+      self.measureNo = 0
       usrFileName = raw_input(" please enter a name for the output file ")
       self.fileName = usrFileName+".musicxml"
       try:
-         with open(self.fileName, "w") as file:
-            file.write("""<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n""")
-            file.write("""<!DOCTYPE score-partwise PUBLIC\n""")
-            file.write("""     "-//Recordare//DTD MusicXML 3.1 Partwise//EN"\n""")
-            file.write("""     "http://www.musicxml.org/dtds/partwise.dtd">\n""")
-            file.write("""<score-partwise version="3.1">\n""")
-            file.write("""  <work>\n""")
-            file.write("""    <work-title>"""+str(self.Title)+"""</work-title>\n""")
-            file.write("""  </work>\n""")
-            file.write("""  <identification>\n""")
-            file.write("""    <creator type="composer">"""+str(self.progID)+"""</creator>\n""")
-            file.write("""  </identification>\n""")
-            file.write("""  <part-list>\n""")
-            file.write("""    <score-part id="P1">\n""")
-            file.write("""      <part-name>Soprano</part-name>\n""")
-            file.write("""    </score-part>\n""")
-            file.write("""  </part-list>\n""")
-            file.write("""  <part id="P1">\n""")
-            file.write("""    <measure number="1">\n""")
-            file.write("""      <attributes>\n""")
-            file.write("""        <divisions>1</divisions>\n""")
-            file.write("""        <key>\n""")
-            file.write("""          <fifths>0</fifths>\n""")
-            file.write("""        </key>\n""")
-            file.write("""        <time>\n""")
-            file.write("""          <beats>4</beats>\n""")
-            file.write("""          <beat-type>4</beat-type>\n""")
-            file.write("""        </time>\n""")
-            file.write("""        <clef>\n""")
-            file.write("""          <sign>G</sign>\n""")
-            file.write("""          <line>2</line>\n""")
-            file.write("""        </clef>\n""")
-            file.write("""      </attributes>\n""")
-            file.write("""      <note>\n""")
-            file.write("""        <pitch>\n""")
-            file.write("""          <step>C</step>\n""")
-            file.write("""          <octave>4</octave>\n""")
-            file.write("""        </pitch>\n""")
-            file.write("""        <duration>4</duration>\n""")
-            file.write("""        <type>whole</type>\n""")
-            file.write("""      </note>\n""")
-            file.write("""    </measure>\n""")
-            file.write("""  </part>\n""")
-            file.write("""</score-partwise>\n""")
+         self.file = open(self.fileName, "w")
       except IOError:
-         print "There was an issue with the file operation."
+         self.file = None
+         print "\nThere was an issue with the file operation."
          print "Please double-check your filename.\n"
          print "Note the MusicXML file will attempt to save in the"
          print "same folder as the Python files; please ensure you"
          print "have write permission for that folder."
+         return
+      self.file.write('<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n')
+      self.file.write('<!DOCTYPE score-partwise PUBLIC\n')
+      self.file.write('     "-//Recordare//DTD MusicXML 3.1 Partwise//EN"\n')
+      self.file.write('     "http://www.musicxml.org/dtds/partwise.dtd">\n')
+      self.file.write('<score-partwise version="3.1">\n')
+      self.file.write('  <work>\n')
+      self.file.write('    <work-title>'+str(self.Title)+'</work-title>\n')
+      self.file.write('  </work>\n')
+      self.file.write('  <identification>\n')
+      self.file.write('    <creator type="composer">'+str(self.progID)+'</creator>\n')
+      self.file.write('  </identification>\n')
+      self.file.write('  <part-list>\n')
+      self.file.write('    <score-part id="P1">\n')
+      self.file.write('      <part-name>Soprano</part-name>\n')
+      self.file.write('    </score-part>\n')
+      self.file.write('  </part-list>\n')
+      self.file.write('  <part id="P1">\n')
+      self.measureNo += 1
+      self.file.write('    <measure number="'+str(self.measureNo)+'">\n')
+      self.file.write('      <attributes>\n')
+      self.file.write('        <divisions>1</divisions>\n')
+      self.file.write('        <key>\n')
+      self.file.write('          <fifths>0</fifths>\n')
+      self.file.write('        </key>\n')
+      self.file.write('        <time>\n')
+      self.file.write('          <beats>4</beats>\n')
+      self.file.write('          <beat-type>4</beat-type>\n')
+      self.file.write('        </time>\n')
+      self.file.write('        <clef>\n')
+      self.file.write('          <sign>G</sign>\n')
+      self.file.write('          <line>2</line>\n')
+      self.file.write('        </clef>\n')
+      self.file.write('      </attributes>\n')
+
+   def endXMLFile(self):
+      if self.file is not None:
+         self.file.write('    </measure>\n')
+         self.file.write('  </part>\n')
+         self.file.write('</score-partwise>\n')
+         self.file.close()
+
+   def addMeasure(self):
+      if self.file is not None:
+         self.file.write('    </measure>\n')
+         self.measureNo += 1
+         self.file.write('    <measure number="'+str(self.measureNo)+'">\n')
+
+   def addNote(self):
+      if self.file is not None:
+         self.file.write('      <note>\n')
+         self.file.write('        <pitch>\n')
+         self.file.write('          <step>C</step>\n')
+         self.file.write('          <octave>4</octave>\n')
+         self.file.write('        </pitch>\n')
+         self.file.write('        <duration>2</duration>\n')
+         self.file.write('        <type>half</type>\n')
+         self.file.write('      </note>\n')
+         self.file.write('      <note>\n')
+         self.file.write('        <pitch>\n')
+         self.file.write('          <step>D</step>\n')
+         self.file.write('          <octave>4</octave>\n')
+         self.file.write('        </pitch>\n')
+         self.file.write('        <duration>2</duration>\n')
+         self.file.write('        <type>half</type>\n')
+         self.file.write('      </note>\n')
+
