@@ -28,6 +28,9 @@ class DF_Syllables:
       self.prefixesTwo = ["de", "il", "im", "in", "ir", "re", "un", "up"]
       self.le_exceptions = ["whole", "mobile", "pole", "male", "female", "hale", "pale", "tale", "sale", "aisle", "whale", "while", "bale"]
       self.co_exceptions = ["cool", "coach", "coat", "coal", "count", "coin", "coarse", "coup", "coif", "cook", "coign", "coiffe", "coof", "court"]
+      self.consonantGroups_two = ["bl", "br", "ch", "ck", "cl", "cr", "dr", "fl", "fr", "gh", "gl", "gr", "ng", "ph", "pl",
+      "pr", "sc", "sh", "sk", "sl", "sm", "sn", "sp", "st", "sw", "th", "tr", "tw", "wh", "wr"]
+      self.consonantGroups_three = ["n't", "nth", "sch", "scr", "shr", "spl", "spr", "squ", "str", "thr"]
 
    def b(self, word):
       if len(word) < 4:
@@ -46,12 +49,13 @@ class DF_Syllables:
                   adjusted_endLength += 1
             if adjusted_endLength > endLength:
                rest = rest[:len(rest)+endLength-adjusted_endLength]
-         # NEED to add something here to further break down the 'rest'
+         restBrokenDown = self.r(rest)
          result = []
          if start != "":
             result.append(start)
-         if rest != "":
-            result.append(rest)
+         if restBrokenDown != []:
+            for syllable in restBrokenDown:
+               result.append(syllable)
          if adjusted_endLength > 0:
             for syllable in adjusted_ending:
                result.append(syllable)
@@ -180,20 +184,154 @@ class DF_Syllables:
          rest = word
       return start, rest
 
-   def regularBreakdown(self, word):
+   def r(self, word):
+      if word == "":
+         return []
+      breakdown, tracker = self.regularBreakDown(word)
+      result = []
+      skipNext = False
+      for index, element in enumerate(breakdown):
+         if index == 0: # this is the beginning of the word
+            result.append(element)
+            if len(breakdown) > 1:
+               if tracker[0] == "c" and tracker[1] == "v":
+                  result[0] = result[0]+breakdown[1]
+                  skipNext = True
+         elif index == len(breakdown)-1: # there are at least two elements in the word and this is the last one
+            # in general, we want to join a consonant group unless it's "n't" or starts with an apostrophe
+            # if it's a vowel group then we want to sound it separately
+            # also, if it's an unsounded "e" we might need to modify the previous group/s slightly
+            if tracker[index] == "c" and str.lower(element) != "n't" and element[0] != "'":
+               result[-1] = result[-1]+element # join this final consonant group onto the end of the last syllable
+               break
+            else: # check if it's an unsounded e -- adjust for 'skipNext' dynamic
+               if str.lower(element) == "e":
+                  if skipNext is True: # will be true if the preceding group was a consonant; if it's false then it's preceded by a vowel group so it's sounded
+                     if len(result[-1]) > 2: # the current last syllable has at least three letters
+                        if result[-1][-2] not in self.vowels and result[-1][-3] in self.vowels:
+                           # we have a final e preceded by something that ends in vowel-consonant
+                           # the 'e' is already in place and it's already a single syllable, there's nothing more to do
+                           # Note: this shouldn't really happen; if 'skipNext' is true then the preceding syllable should NOT have a vowel group at the start
+                           break
+                     if len(result) > 1: # there are at least two syllables already in the result
+                        if len(result[-1]) == 2 and result[-1][0] not in self.vowels and result[-2][-1] in self.vowels:
+                           # we have a final 'e' preceded by a single consonant preceded by a vowel
+                           result[-2] = result[-2]+result[-1] # join the last 'xe' syllable on to the preceding vowel-ending syllable
+                           del result[-1] # remove the 'xe' syllable
+                           break
+               # we arrive here if we have not hit a 'break' statement above; that is, none of the above conditions applied
+               # so we have n't, 'xyz or a vowel group that's not an unsounded e
+               if skipNext is False:
+                  result.append(element) # add it as a separate syllable
+         else: # there's at least one element before and after this one
+            if tracker[index] == "c" and tracker[index+1] == "v":
+               result.append(element+breakdown[index+1])
+               skipNext = True
+            elif tracker[index] == "c" and tracker[index+1] == "c":
+               result[-1] = result[-1]+element
+               skipNext = False
+            elif tracker[index] == "v":
+               if skipNext is False:
+                  result.append(element)
+               else:
+                  skipNext = False
+      return result
+
+   def regularBreakDown(self, word):
       w = str.lower(word)
+      syllableEstimate = 0
+      thisGroupLength = 0
+      wordBreakdown = []
+      VCTracker = []
       # look for consonant and vowel groups
       for index, letter in enumerate(w):
          if index == 0: # first letter
             if letter in self.vowels: # the word starts with a vowel (excluding 'y')
+               syllableEstimate += 1
+               thisGroupLength += 1
                v_c = "v"
             else: # we're treating an initial 'y' as a consonant
                v_c = "c"
+               thisGroupLength += 1
          else: # every other letter
             if letter in self.vowels_y: # from here on, 'y' is treated like a vowel
+               if v_c[-1] != "v": # the preceding letter was not a vowel
+                  syllableEstimate += 1
+                  grouping = self.checkConsonantGroup(word[index-thisGroupLength:index])
+                  for group in grouping:
+                     wordBreakdown.append(group)
+                     VCTracker.append("c")
+                  thisGroupLength = 1
+               else: # the preceding letter was also a vowel
+                  thisGroupLength += 1
                v_c = v_c+"v"
-            else:
+            else: # this letter is a consonant
+               if v_c[-1] != "c": # the preceding letter was not a consonant
+                  grouping = self.checkVowelGroup(word[index-thisGroupLength:index])
+                  for group in grouping:
+                     wordBreakdown.append(group)
+                     VCTracker.append("v")
+                  thisGroupLength = 1
+               else: # the preceding letter was also a consonant
+                  thisGroupLength += 1
                v_c = v_c+"c"
+            # the last vowel/consonant grouping has not been dealt with yet (because you have to get 'past' the end of it before it's dealt with)
+            # so now we have to handle that final group
+            if index == len(w)-1: # this is the last letter
+               if v_c[-1] == "v": # the final group is a vowel group
+                  grouping = self.checkVowelGroup(word[-thisGroupLength:])
+                  for group in grouping:
+                     wordBreakdown.append(group)
+                     VCTracker.append("v")
+               else: # the final group is a consonant group
+                  grouping = self.checkConsonantGroup(word[-thisGroupLength:])
+                  for group in grouping:
+                     wordBreakdown.append(group)
+                     VCTracker.append("c")
+      return wordBreakdown, VCTracker
+
+   def checkVowelGroup(self, group): # for simplicity, we'll say every vowel group is one syllable unless it starts with an 'i' (other than 'ie'); then it's two
+      if len(group) == 1:
+         return [group]
+      elif len(group) == 2:
+         if group[0] in ["i", "I"] and group[1] not in ["e", "E"]:
+            return [group[0], group[1]]
+         else:
+            return [group]
+      elif group[0] in ["i", "I"]:
+         return [group[0], group[1:]]
+      else:
+         return [group]
+
+   def checkConsonantGroup(self, group):
+      g = str.lower(group)
+      if len(g) == 1:
+         return [group]
+      elif len(g) == 2:
+         if g in self.consonantGroups_two:
+            return [group]
+         else:
+            return [group[0], group[1]]
+      elif len(g) == 3:
+         if g in self.consonantGroups_three:
+            return [group]
+         elif g[0]+g[1] in self.consonantGroups_two:
+            return [group[0]+group[1], group[2]]
+         elif g[1]+g[2] in self.consonantGroups_two:
+            return [group[0], group[1]+group[2]]
+         else: # no consonant groups found
+            return [group[0], group[1]+group[2]]
+      elif len(g) > 3:
+         if g[-3]+g[-2]+g[-1] in self.consonantGroups_three:
+            return [group[:-3], group[-3:]]
+         elif g[0]+g[1]+g[2] in self.consonantGroups_three:
+            return [group[:3], group[3:]]
+         elif g[-2]+g[-1] in self.consonantGroups_two:
+            return [group[:-2], group[-2:]]
+         elif g[0]+g[1] in self.consonantGroups_two:
+            return [group[:2], group[2:]]
+         else: # no consonant groups found
+            return [group[:2], group[2:]]
 
    def searchSuffix(self, word):
       # conducts a search for common suffixes
