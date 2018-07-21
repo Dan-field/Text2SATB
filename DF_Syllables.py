@@ -12,8 +12,9 @@ class DF_Syllables:
       """Initialises a DF_Syllables object"""
       self.vowels = ["a", "e", "i", "o", "u", "A", "E", "I", "O", "U"]
       self.vowels_y = ["a", "e", "i", "o", "u", "y", "A", "E", "I", "O", "U", "Y"]
+      self.vowels_c_g_s = ["a", "c", "e", "g", "i", "o", "s", "u", "A", "C", "E", "G", "I", "O", "S", "U"]
       self.suffixesOne = ["i", "y"]
-      self.suffixesTwo = ["ac", "al", "an", "ar", "ee", "en", "er", "ic", "or"]
+      self.suffixesTwo = []#"ac", "al", "an", "ar", "ee", "en", "er", "ic", "or"]
       self.suffixesThree = ["ade", "age", "ant", "ard", "ary", "ate", "day", "dom", "dox", "eer", "ent", "ern", "ese",
       "ess", "est", "ful", "gam", "gon", "ial", "ian", "iel", "ify", "ile", "ily", "ine", "ing", "ion", "ish", "ism", "ist",
       "ite", "ity", "ive", "ise", "ize", "let", "log", "oid", "oma", "ory", "ous", "ure"]
@@ -21,7 +22,7 @@ class DF_Syllables:
       "ible", "ical", "ious", "itis", "less", "like", "ling", "ment", "ness", "onym", "opia", "opsy", "osis", "path",
       "sect", "ship", "sion", "some", "tion", "tome", "tomy", "tude", "ular", "uous", "ward", "ware", "wise", "xion", "yond"]
       self.suffixesFive = ["acity", "algia", "arian", "arium", "ation", "ative", "cracy", "cycle", "esque", "gonic", "guage", "iasis",
-      "ledge", "loger", "ocity", "ology", "otomy", "orium", "pathy", "phile", "phone", "phyte", "scopy", "scope", "sophy", "thing", "ulous", "wards"]
+      "ledge", "loger", "ocity", "ology", "otomy", "orium", "pathy", "phile", "phone", "phyte", "scopy", "scope", "sophy", "thing", "times", "tions", "ulous", "wards"]
       self.suffixesSix = ["aholic", "ectomy", "iatric", "logist", "oholic", "ostomy", "phobia", "plegia", "plegic", "scribe",
       "script", "sophic", "trophy"]
       self.suffixesSeven = ["alogist", "escence", "isation", "ization", "ologist"]
@@ -50,6 +51,22 @@ class DF_Syllables:
             if adjusted_endLength > endLength:
                rest = rest[:len(rest)+endLength-adjusted_endLength]
          restBrokenDown = self.r(rest)
+         if len(restBrokenDown) > 1: # make a late adjustment for 'ed' endings that don't sound separately
+            if restBrokenDown[-1] == "ed":
+               if restBrokenDown[-2][-1] not in ["c", "d", "i", "t"]:
+                  restBrokenDown[-2] = restBrokenDown[-2]+restBrokenDown[-1]
+                  del restBrokenDown[-1]
+            elif len(restBrokenDown[-1]) > 2:
+               if restBrokenDown[-1][-2] == "e" and restBrokenDown[-1][-1] == "d":
+                  if restBrokenDown[-1][-3] not in ["c", "d", "i", "t"] and restBrokenDown[-1][0] not in self.vowels:
+                     restBrokenDown[-2] = restBrokenDown[-2]+restBrokenDown[-1]
+                     del restBrokenDown[-1]
+            # also, make a late adjustment for first two syllables that should actually be one (note: 'co' starts are not affected here if they are part of the prefix i.e. 'start')
+            if len(restBrokenDown[0]) == 2 and len(restBrokenDown[1]) == 2:
+               if restBrokenDown[0][0] not in self.vowels and restBrokenDown[0][1] in self.vowels_y:
+                  if restBrokenDown[1][0] not in self.vowels and restBrokenDown[1][1] in ["e", "E"]:
+                     restBrokenDown[0] = restBrokenDown[0]+restBrokenDown[1]
+                     del restBrokenDown[1]
          result = []
          if start != "":
             result.append(start)
@@ -219,6 +236,11 @@ class DF_Syllables:
                            result[-2] = result[-2]+result[-1] # join the last 'xe' syllable on to the preceding vowel-ending syllable
                            del result[-1] # remove the 'xe' syllable
                            break
+                        elif len(result[-1]) == 2 and result[-1][0] in ["c", "g", "s"]:
+                           # most likely the final e is modifying the consonant, and is not a separate syllable
+                           result[-2] = result[-2]+result[-1] # join the last 'xe' syllable on to the preceding vowel-ending syllable
+                           del result[-1] # remove the 'xe' syllable
+                           break
                # we arrive here if we have not hit a 'break' statement above; that is, none of the above conditions applied
                # so we have n't, 'xyz or a vowel group that's not an unsounded e
                if skipNext is False:
@@ -235,6 +257,12 @@ class DF_Syllables:
                   result.append(element)
                else:
                   skipNext = False
+                  # check for an unsounded e followed by an s - unless the e is preceded by a c, g or s
+                  if str.lower(element) == "e" and str.lower(breakdown[index+1]) == "s" and len(result) > 1: # mostly copied from the 'final e' check above
+                     if len(result[-1]) == 2 and result[-1][0] not in self.vowels_c_g_s and result[-2][-1] in self.vowels_y:
+                        # we have a standalone 'e' preceded by a single consonant preceded by a vowel
+                        result[-2] = result[-2]+result[-1] # join the last 'xe' syllable on to the preceding vowel-ending syllable
+                        del result[-1] # remove the 'xe' syllable
       return result
 
    def regularBreakDown(self, word):
@@ -310,6 +338,8 @@ class DF_Syllables:
       elif len(g) == 2:
          if g in self.consonantGroups_two:
             return [group]
+         elif g[0] == g[1]: # double letter
+            return [group]
          else:
             return [group[0], group[1]]
       elif len(g) == 3:
@@ -374,10 +404,10 @@ class DF_Syllables:
       "ledge", "less", "like", "ling", "ment", "ness", "path", "sect", "ship", "some", "tome", "tude", "ward", "ware", "wise",
       "phile", "phone", "phyte", "scope", "wards", "scribe", "script", "thing", "yond", "ade", "age", "ant", "ard", "ate", "eer", "ent",
       "ern", "ese", "ess", "est", "ile", "ine", "ing", "ish", "ism", "ist", "ite", "ive", "ise", "ize", "oid", "ous",
-      "ure", "ance", "ence", "ette", "esque"]:
+      "ure", "ance", "ence", "ette", "esque", "sion", "tion", "times", "tions", "xion"]:
          return [S]
       # 2. Other suffixes
-      elif suffix in ["ency", "gamy", "opsy", "sion", "tion", "tomy", "xion"]: # 2,2
+      elif suffix in ["ency", "gamy", "opsy", "tomy"]: # 2,2
          return [S[-4]+S[-3], S[-2]+S[-1]]
       elif suffix in ["cycle", "loger", "pathy", "sophy"]: # 2,3
          return [S[-5]+S[-4], S[-3]+S[-2]+S[-1]]
