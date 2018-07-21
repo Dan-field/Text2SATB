@@ -19,16 +19,16 @@ class DF_Syllables:
       "ite", "ity", "ive", "ise", "ize", "let", "log", "oid", "oma", "ory", "ous", "ure"]
       self.suffixesFour = ["able", "ance", "cide", "crat", "cule", "emia", "ence", "ency", "etic", "ette", "gamy", "hood",
       "ible", "ical", "ious", "itis", "less", "like", "ling", "ment", "ness", "onym", "opia", "opsy", "osis", "path",
-      "sect", "ship", "sion", "some", "tion", "tome", "tomy", "tude", "ular", "uous", "ward", "ware", "wise", "xion"]
-      self.suffixesFive = ["acity", "algia", "arian", "arium", "ation", "ative", "cracy", "cycle", "esque", "gonic", "iasis",
-      "loger", "ocity", "ology", "otomy", "orium", "pathy", "phile", "phone", "phyte", "scopy", "scope", "sophy", "ulous", "wards"]
+      "sect", "ship", "sion", "some", "tion", "tome", "tomy", "tude", "ular", "uous", "ward", "ware", "wise", "xion", "yond"]
+      self.suffixesFive = ["acity", "algia", "arian", "arium", "ation", "ative", "cracy", "cycle", "esque", "gonic", "guage", "iasis",
+      "ledge", "loger", "ocity", "ology", "otomy", "orium", "pathy", "phile", "phone", "phyte", "scopy", "scope", "sophy", "thing", "ulous", "wards"]
       self.suffixesSix = ["aholic", "ectomy", "iatric", "logist", "oholic", "ostomy", "phobia", "plegia", "plegic", "scribe",
       "script", "sophic", "trophy"]
       self.suffixesSeven = ["alogist", "escence", "isation", "ization", "ologist"]
       self.prefixesTwo = ["de", "il", "im", "in", "ir", "re", "un", "up"]
       self.le_exceptions = ["whole", "mobile", "pole", "male", "female", "hale", "pale", "tale", "sale", "aisle", "whale", "while", "bale"]
       self.co_exceptions = ["cool", "coach", "coat", "coal", "count", "coin", "coarse", "coup", "coif", "cook", "coign", "coiffe", "coof", "court"]
-      self.consonantGroups_two = ["bl", "br", "ch", "ck", "cl", "cr", "dr", "fl", "fr", "gh", "gl", "gr", "ng", "ph", "pl",
+      self.consonantGroups_two = ["bl", "br", "ch", "ck", "cl", "cr", "dr", "fl", "fr", "gh", "gl", "gr", "kn", "ng", "ph", "pl",
       "pr", "sc", "sh", "sk", "sl", "sm", "sn", "sp", "st", "sw", "th", "tr", "tw", "wh", "wr"]
       self.consonantGroups_three = ["n't", "nth", "sch", "scr", "shr", "spl", "spr", "squ", "str", "thr"]
 
@@ -370,9 +370,9 @@ class DF_Syllables:
       suffix = str.lower(S)
       # manually break down the items in the suffix list
       # 1. Single-syllable suffixes
-      if len(suffix) < 3 or suffix in ["day", "dom", "dox", "ful", "gam", "gon", "let", "log", "cide", "crat", "cule", "hood",
-      "less", "like", "ling", "ment", "ness", "path", "sect", "ship", "some", "tome", "tude", "ward", "ware", "wise",
-      "phile", "phone", "phyte", "scope", "wards", "scribe", "script", "ade", "age", "ant", "ard", "ate", "eer", "ent",
+      if len(suffix) < 3 or suffix in ["day", "dom", "dox", "ful", "gam", "gon", "let", "log", "cide", "crat", "cule", "guage", "hood",
+      "ledge", "less", "like", "ling", "ment", "ness", "path", "sect", "ship", "some", "tome", "tude", "ward", "ware", "wise",
+      "phile", "phone", "phyte", "scope", "wards", "scribe", "script", "thing", "yond", "ade", "age", "ant", "ard", "ate", "eer", "ent",
       "ern", "ese", "ess", "est", "ile", "ine", "ing", "ish", "ism", "ist", "ite", "ive", "ise", "ize", "oid", "ous",
       "ure", "ance", "ence", "ette", "esque"]:
          return [S]
