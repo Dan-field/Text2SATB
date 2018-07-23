@@ -20,9 +20,44 @@ class DF_SongPlanner:
       self.rangeTenor = [47, 69]
       self.rangeBass = [40, 64]
 
-   def planStructure(self):
-      # looks at the incoming verse structure and plans a song structure
-      pass
+   def planHarmonicStructure(self):
+      # looks at the incoming verse structure and generates a chord sequence
+      # Try to keep the chord references numeric/relative for easy adaptation
+      key = 0 # number zero will represent the 'home' key
+      verseKey = 0
+      lineKey = 0
+      chords = [] # start an empty list to hold the chords
+      for index, verse in enumerate(self.verses):
+         if index == 0: # first verse
+            verseKey = 0 # start in the 'home' key
+         elif index == len(self.verses)-1: # last verse
+            verseKey = 0 # last verse also in the 'home' key
+         else:
+            verseSyllables = 0
+            for number in self.versesLinesSyllables[index]:
+               verseSyllables += number
+            keyshift = self.keyShift(int(verseSyllables/20)%12) # this shifts the key by one step for every 20 syllables in the verse
+            # but if there are more than 240 syllables, it goes back to zero and starts over again
+            verseKey += keyshift
+         for i, line in enumerate(self.verses[index]):
+            if i == 0: # first line
+               lineKey = verseKey # first line of each verse is in the verse's key
+            elif index == len(self.verses)-1 and i == len(self.verses[index])-1: # this is the last line of the last verse
+               lineKey = verseKey # last line of the song should be in the home key
+            else:
+               lineSyllables = self.versesLinesSyllables[index][i]
+               keyshift = self.keyShift(int(lineSyllables/12)%12)
+               lineKey += keyshift
+
+   def keyShift(self, num0_12):
+      # takes the key shift number 0 to 11 and changes it to +/-
+      # (we're assuming the cycle of fifths but this function does not explicitly require it)
+      result = 0
+      if num0_12%2 == 0: # even; go negative
+         result = -num0_12/2
+      else: # go positive
+         result = 1+num0_12/2
+      return result
 
    def getLinesAndSyllables(self, verses):
       resultSong = []

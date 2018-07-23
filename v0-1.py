@@ -10,6 +10,12 @@ verses = Input.provideVerses()
 positions = Input.providePositions()
 Planner = DF_SongPlanner(verses, positions)
 
+print verses
+print positions
+print Planner.versesLinesSyllables
+
+Planner.planHarmonicStructure()
+
 #X = DF_MusicXML(WorkTitle, ProgramID)
 #sopNotes = [[60, 65, 57], [59, 61, 63]]
 #sopDurations = [[4, 4, 8], [4, 4, 8]]
