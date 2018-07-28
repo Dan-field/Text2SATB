@@ -74,36 +74,35 @@ class DF_MIDINumbers:
    def Duration2Type(self, duration):
       # this function converts a duration value to a note type
       # it assumes 4 = crotchet, 16 = semi-breve (that is, "divisions" is equal to 4)
-      if duration == 4:
-         type = "quarter"
+      dotted = False
+      tiedToMinim = False
+      if duration == 1:
+         Ntype = "16th"
       elif duration == 2:
-         type = "eighth"
-      elif duration == 1:
-         type = "sixteenth"
+         Ntype = "eighth"
+      elif duration == 3:
+         Ntype = "eighth"
+         dotted = True
+      elif duration == 4:
+         Ntype = "quarter"
+      elif duration == 6:
+         Ntype = "quarter"
+         dotted = True
       elif duration == 8:
-         type = "half"
+         Ntype = "half"
+      elif duration == 10:
+         Ntype = "eighth"
+         tiedToMinim = True
+      elif duration == 12:
+         Ntype = "half"
+         dotted = True
+      elif duration == 14:
+         Ntype = "quarter"
+         dotted = True
+         tiedToMinim = True
       elif duration == 16:
-         type = "whole"
+         Ntype = "whole"
       else:
-         type = "quarter"
-      return type
-
-   def Stem(self, voice):
-      # this function sets the stem directions for the voices
-      # 1 = Soprano => up
-      # 2 = Alto => down
-      # 3 = Tenor => up
-      # 4 = Bass => down
-      if voice == 1:
-         stem = "up"
-      elif voice == 2:
-         stem = "down"
-      elif voice == 3:
-         stem = "up"
-      elif voice == 4:
-         stem = "down"
-      return stem
-
-
-
+         Ntype = "quarter"
+      return Ntype, dotted, tiedToMinim
 

@@ -23,11 +23,11 @@ class DF_MusicXML:
       self.measureNo = 0
       self.voice = 1 # 1 Soprano, 2 Alto, 3 Tenor, 4 Bass
       self.flats = True # assumes black notes should be written as flats - will need to be updated once a 'key' functionality is added
-      usrFileName = raw_input("please enter a name for the output file: ")
+      usrFileName = raw_input("please enter a name for the output file\n: ")
       self.fileName = usrFileName+".musicxml"
       try:
          self.file = open(self.fileName, "w")
-      except IOError:
+      except (OSError, IOError):
          self.file = None
          print "\nThere was an issue with the file operation."
          print "Please double-check your filename.\n"
@@ -70,7 +70,7 @@ class DF_MusicXML:
          self.file.write('      <attributes>\n')
          self.file.write('        <divisions>'+str(self.DIVISIONS)+'</divisions>\n')
          self.file.write('        <key>\n')
-         self.file.write('          <fifths>0</fifths>\n')
+         self.file.write('          <fifths>-3</fifths>\n')
          self.file.write('        </key>\n')
          self.file.write('        <time>\n')
          self.file.write('          <beats>4</beats>\n')
@@ -91,7 +91,7 @@ class DF_MusicXML:
          self.file.write('      <attributes>\n')
          self.file.write('        <divisions>'+str(self.DIVISIONS)+'</divisions>\n')
          self.file.write('        <key>\n')
-         self.file.write('          <fifths>0</fifths>\n')
+         self.file.write('          <fifths>-3</fifths>\n')
          self.file.write('        </key>\n')
          self.file.write('        <time>\n')
          self.file.write('          <beats>4</beats>\n')
@@ -112,7 +112,7 @@ class DF_MusicXML:
          self.file.write('      <attributes>\n')
          self.file.write('        <divisions>'+str(self.DIVISIONS)+'</divisions>\n')
          self.file.write('        <key>\n')
-         self.file.write('          <fifths>0</fifths>\n')
+         self.file.write('          <fifths>-3</fifths>\n')
          self.file.write('        </key>\n')
          self.file.write('        <time>\n')
          self.file.write('          <beats>4</beats>\n')
@@ -134,7 +134,7 @@ class DF_MusicXML:
          self.file.write('      <attributes>\n')
          self.file.write('        <divisions>'+str(self.DIVISIONS)+'</divisions>\n')
          self.file.write('        <key>\n')
-         self.file.write('          <fifths>0</fifths>\n')
+         self.file.write('          <fifths>-3</fifths>\n')
          self.file.write('        </key>\n')
          self.file.write('        <time>\n')
          self.file.write('          <beats>4</beats>\n')
@@ -148,6 +148,9 @@ class DF_MusicXML:
 
    def endPart(self):
       if self.file is not None:
+         self.file.write('      <barline location="right">\n')
+         self.file.write('        <bar-style>light-heavy</bar-style>\n')
+         self.file.write('      </barline>\n')
          self.file.write('    </measure>\n')
          self.file.write('  </part>\n')
 
@@ -162,28 +165,78 @@ class DF_MusicXML:
          self.measureNo += 1
          self.file.write('    <measure number="'+str(self.measureNo)+'">\n')
 
-   def addNote(self, MIDI_No, duration=None, lyric=None): # duration: 4 = crotchet, 16 = semi-breve
+   def addMeasureDbl(self):
+      if self.file is not None:
+         self.file.write('    </measure>\n')
+         self.measureNo += 1
+         self.file.write('    <measure number="'+str(self.measureNo)+'">\n')
+         self.file.write('      <barline location="left">\n')
+         self.file.write('        <bar-style>light-light</bar-style>\n')
+         self.file.write('      </barline>\n')
+
+   def addNote(self, MIDI_No, duration=None, lyric=None, position=None, tie=None): # duration: 4 = crotchet, 16 = semi-breve
       if self.file is not None:
          if duration is None:
             duration = 4 # default to a crotchet
          if lyric is None:
             lyric = "" # default to no text
-         note_type = self.MIDI.Duration2Type(duration)
-         octave, step, alter = self.MIDI.MIDI2Note(MIDI_No, self.flats)
+         note_type, dotted, tiedToMinim = self.MIDI.Duration2Type(duration)
          self.file.write('      <note>\n')
-         self.file.write('        <pitch>\n')
-         self.file.write('          <step>'+str(step)+'</step>\n')
-         if alter != 0:
-            self.file.write('          <alter>'+str(alter)+'</alter>\n')
-         self.file.write('          <octave>'+str(octave)+'</octave>\n')
-         self.file.write('        </pitch>\n')
-         self.file.write('        <duration>'+str(duration)+'</duration>\n')
+         if MIDI_No != "RRR":
+            octave, step, alter = self.MIDI.MIDI2Note(MIDI_No, self.flats)
+            self.file.write('        <pitch>\n')
+            self.file.write('          <step>'+str(step)+'</step>\n')
+            if alter != 0:
+               self.file.write('          <alter>'+str(alter)+'</alter>\n')
+            self.file.write('          <octave>'+str(octave)+'</octave>\n')
+            self.file.write('        </pitch>\n')
+         else:
+            self.file.write('        <rest/>\n')
+         if tiedToMinim is False:
+            self.file.write('        <duration>'+str(duration)+'</duration>\n')
+         else:
+            self.file.write('        <duration>'+str(duration-8)+'</duration>\n')
          self.file.write('        <voice>'+str(self.voice)+'</voice>\n')
          self.file.write('        <type>'+str(note_type)+'</type>\n')
+         if dotted is True:
+            self.file.write('        <dot></dot>\n')
+         if tie is not None and tiedToMinim is False:
+            self.file.write('        <notations>\n')
+            self.file.write('          <tied type="'+str(tie)+'"></tied>\n')
+            self.file.write('        </notations>\n')
+         if tiedToMinim is True:
+            self.file.write('        <notations>\n')
+            if tie == "stop":
+               self.file.write('          <tied type="stop"></tied>\n')
+            self.file.write('          <tied type="start"></tied>\n')
+            self.file.write('        </notations>\n')            
          self.file.write('        <lyric>\n')
+         if position is not None:
+            self.file.write('          <syllabic>'+str(position)+'</syllabic>\n')
          self.file.write('          <text>'+str(lyric)+'</text>\n')
          self.file.write('        </lyric>\n')
          self.file.write('      </note>\n')
+         if tiedToMinim is True:
+            self.file.write('      <note>\n')
+            if MIDI_No != "RRR":
+               self.file.write('        <pitch>\n')
+               self.file.write('          <step>'+str(step)+'</step>\n')
+               if alter != 0:
+                  self.file.write('          <alter>'+str(alter)+'</alter>\n')
+               self.file.write('          <octave>'+str(octave)+'</octave>\n')
+               self.file.write('        </pitch>\n')
+            else:
+               self.file.write('        <rest/>\n')
+            self.file.write('        <duration>8</duration>\n')
+            self.file.write('        <voice>'+str(self.voice)+'</voice>\n')
+            self.file.write('        <type>half</type>\n')
+            self.file.write('        <notations>\n')
+            self.file.write('          <tied type="stop"></tied>\n')
+            if tie == "start":
+               self.file.write('          <tied type="start"></tied>\n')
+            self.file.write('        </notations>\n')
+            self.file.write('      </note>\n')
+
 
    def backOneBar(self):
       if self.file is not None:
@@ -191,54 +244,79 @@ class DF_MusicXML:
          self.file.write('        <duration>'+str(int(self.DIVISIONS*4))+'</duration>\n')
          self.file.write('      </backup>\n')
 
-   def writeSop(self, notes, durations, lyrics=None):
+   def writeSop(self, notes, durations, lyrics=None, positions=None, ties=None):
       self.startSoprano()
-      for Bindex, bar in enumerate(notes):
-         if Bindex != 0:
-            self.addMeasure()
-         if lyrics is not None:
-            for Nindex, note in enumerate(bar):
-               self.addNote(bar[Nindex], durations[Bindex][Nindex], lyrics[Bindex][Nindex])
-         else:
-            for Nindex, note in enumerate(bar):
-               self.addNote(bar[Nindex], durations[Bindex][Nindex])
+      for Vindex, verse in enumerate(notes):
+         for Bindex, bar in enumerate(verse):
+            if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
+               self.addMeasureDbl()
+            elif Bindex != 0:
+               self.addMeasure()
+            if lyrics is not None and positions is not None and ties is not None:
+               for Nindex, note in enumerate(bar):
+                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
+            elif lyrics is not None:
+               for Nindex, note in enumerate(bar):
+                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
+            else:
+               for Nindex, note in enumerate(bar):
+                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex])
       self.endPart()
 
-   def writeAlto(self, notes, durations, lyrics=None):
+   def writeAlto(self, notes, durations, lyrics=None, positions=None, ties=None):
       self.startAlto()
-      for Bindex, bar in enumerate(notes):
-         if Bindex != 0:
-            self.addMeasure()
-         if lyrics is not None:
-            for Nindex, note in enumerate(bar):
-               self.addNote(bar[Nindex], durations[Bindex][Nindex], lyrics[Bindex][Nindex])
-         else:
-            for Nindex, note in enumerate(bar):
-               self.addNote(bar[Nindex], durations[Bindex][Nindex])
+      for Vindex, verse in enumerate(notes):
+         for Bindex, bar in enumerate(verse):
+            if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
+               self.addMeasureDbl()
+            elif Bindex != 0:
+               self.addMeasure()
+            if lyrics is not None and positions is not None and ties is not None:
+               for Nindex, note in enumerate(bar):
+                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
+            elif lyrics is not None:
+               for Nindex, note in enumerate(bar):
+                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
+            else:
+               for Nindex, note in enumerate(bar):
+                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex])
       self.endPart()
 
-   def writeTenor(self, notes, durations, lyrics=None):
+   def writeTenor(self, notes, durations, lyrics=None, positions=None, ties=None):
       self.startTenor()
-      for Bindex, bar in enumerate(notes):
-         if Bindex != 0:
-            self.addMeasure()
-         if lyrics is not None:
-            for Nindex, note in enumerate(bar):
-               self.addNote(bar[Nindex], durations[Bindex][Nindex], lyrics[Bindex][Nindex])
-         else:
-            for Nindex, note in enumerate(bar):
-               self.addNote(bar[Nindex], durations[Bindex][Nindex])
+      for Vindex, verse in enumerate(notes):
+         for Bindex, bar in enumerate(verse):
+            if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
+               self.addMeasureDbl()
+            elif Bindex != 0:
+               self.addMeasure()
+            if lyrics is not None and positions is not None and ties is not None:
+               for Nindex, note in enumerate(bar):
+                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
+            elif lyrics is not None:
+               for Nindex, note in enumerate(bar):
+                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
+            else:
+               for Nindex, note in enumerate(bar):
+                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex])
       self.endPart()
 
-   def writeBass(self, notes, durations, lyrics=None):
+   def writeBass(self, notes, durations, lyrics=None, positions=None, ties=None):
       self.startBass()
-      for Bindex, bar in enumerate(notes):
-         if Bindex != 0:
-            self.addMeasure()
-         if lyrics is not None:
-            for Nindex, note in enumerate(bar):
-               self.addNote(bar[Nindex], durations[Bindex][Nindex], lyrics[Bindex][Nindex])
-         else:
-            for Nindex, note in enumerate(bar):
-               self.addNote(bar[Nindex], durations[Bindex][Nindex])
+      for Vindex, verse in enumerate(notes):
+         for Bindex, bar in enumerate(verse):
+            if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
+               self.addMeasureDbl()
+            elif Bindex != 0:
+               self.addMeasure()
+            if lyrics is not None and positions is not None and ties is not None:
+               for Nindex, note in enumerate(bar):
+                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
+            elif lyrics is not None:
+               for Nindex, note in enumerate(bar):
+                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
+            else:
+               for Nindex, note in enumerate(bar):
+                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex])
       self.endPart()
+

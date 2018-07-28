@@ -13,6 +13,7 @@ class DF_TextInput:
       self.S = DF_Syllables()
       self.verses = []
       self.positions = []
+      self.scrabbleScores = []
       self.verseCount = 0
       self.lineCount = 0
       self.lastWord = False
@@ -60,43 +61,49 @@ class DF_TextInput:
             self.verseCount += 1 # add one to the verse count
             self.verses.append([]) # create a new empty list within 'verses'
             self.positions.append([]) # create a new empty list within 'positions'
+            self.scrabbleScores.append([]) # create a new empty list within 'scrabbleScores'
             self.lastWord = False # reset the lastWord flag
             self.lineCount = 1 # restart the line count
             self.verses[self.verseCount-1].append([]) # create a new empty sub-list within the new verse list
             self.positions[self.verseCount-1].append([]) # create a new empty sub-list within the new positions list
+            self.scrabbleScores[self.verseCount-1].append([]) # create a new empty sub-list within the new scrabbleScores list
          else:
             if line[-1] not in ".,;:!?-": # if there's a line that doesn't end in punctuation,
-               line = line+";" # add a semicolon. Note all the lines will get blended together so the line breaks will be lost unless they're marked
+               line = line+"*" # add an asterisk. Note all the lines will get blended together so the line breaks will be lost unless they're marked
             for word in line.split(): # this splits the line into words (using 'space' as the delimiter)
                if self.lastWord is True: # the previous word was the last word of its line
                   self.lineCount += 1 # increment the line counter
                   self.verses[self.verseCount-1].append([]) # create a new line sublist within the verse list
                   self.positions[self.verseCount-1].append([]) # create a new line sublist within the position list
+                  self.scrabbleScores[self.verseCount-1].append([]) # create a new line sublist within the scrabbleScores list
                   self.lastWord = False # reset the lastWord flag
+               scrabbleScore = self.scoreScrabble(word) # add up the scrabble score for the word using the scoreScrabble function (below)
                punctuated = False
                punctuation = ""
-               if word[-1] in ".,;:!?-": # if there's a punctuation mark (noting that it will appear at the word end, thanks to the previous breakdown)
+               if word[-1] in ".,;:!?-*": # if there's a punctuation mark (noting that it will appear at the word end, thanks to the previous breakdown)
                   punctuation = word[-1] # store the punctuation mark separately
                   punctuated = True # set a flag to note that this has happened
                   word = word[:len(word)-1] # remove the punctuation mark from the end of the word
                syllables = self.S.b(word) # send the word to the syllable breakdown function, get back a list of syllables
                if punctuated is True: # this is the flag that was set earlier
-                  syllables[-1] = syllables[-1]+punctuation # add the punctuation back on where it came from
-                  if punctuation in ".;:!?": # these punctuation marks will create new lines
+                  if punctuation != "*": # if it's anything other than an asterisk (which is just a temporary marker, not actually needed in the text)
+                     syllables[-1] = syllables[-1]+punctuation # add the punctuation back on where it came from
+                  if punctuation in ".;:!?*": # these punctuation marks will create new lines
                      self.lastWord = True # this will be the last word in this line
                positions = range(len(syllables)) # start an 'empty' list with as many members as there are syllables in the word
                if len(positions) == 1: # this means there's only one syllable in the word
-                  positions[0] = "a" # 'a' for 'alone'. There's also 's' for start, 'm' for mid, 'e' for end
+                  positions[0] = "single" # this follows the MusicXML 'syllabic' convention
                else: # there are two or more syllables in the word
                   for index, position in enumerate(positions):
                      if index == 0: # first syllable
-                        positions[index] = "s"
+                        positions[index] = "begin"
                      elif index == len(positions)-1: # last syllable
-                        positions[index] = "e"
+                        positions[index] = "end"
                      else: # between first and last
-                        positions[index] = "m"
+                        positions[index] = "middle"
                for element in syllables:
                   self.verses[self.verseCount-1][self.lineCount-1].append(element)
+                  self.scrabbleScores[self.verseCount-1][self.lineCount-1].append(scrabbleScore) # list the word's Scrabble score at each syllable position
                for element in positions:
                   self.positions[self.verseCount-1][self.lineCount-1].append(element)
 
@@ -106,3 +113,25 @@ class DF_TextInput:
    def providePositions(self):
       return self.positions
 
+   def provideScrabbleScores(self):
+      return self.scrabbleScores
+
+   def scoreScrabble(self, string):
+      # adds up the Scrabble score of the string
+      runningTotal = 0
+      for letter in str.lower(string):
+         if letter in 'aeioulnrst':
+            runningTotal += 1
+         elif letter in 'dg':
+            runningTotal += 2
+         elif letter in 'bcmp':
+            runningTotal += 3
+         elif letter in 'fhvwy':
+            runningTotal += 4
+         elif letter in 'k':
+            runningTotal += 5
+         elif letter in 'jx':
+            runningTotal += 8
+         elif letter in 'qz':
+            runningTotal += 10
+      return runningTotal
