@@ -8,16 +8,20 @@
 from DF_MIDINumbers import *
 
 class DF_MusicXML:
-   def __init__(self, usrTitle=None, progID=None):
+   def __init__(self, usrTitle=None, progID=None, usrAuthor=None):
       """Initialises a DF_MusicXML object"""
       if usrTitle is None:
-         self.Title = "Sonification"
+         self.Title = "Untitled Sonification"
       else:
-         self.Title = "Sonification: "+str(usrTitle)
+         self.Title = str(usrTitle)
       if progID is None:
-         self.progID = "Dan Field's Sonifier v 0.1"
+         self.progID = "DF Word Score Sonifier v1.0"
       else:
-         self.progID = progID
+         self.progID = str(progID)
+      if usrAuthor is None:
+         self.Author = "from text file"
+      else:
+         self.Author = str(usrAuthor)
       self.MIDI = DF_MIDINumbers()
       self.DIVISIONS = 4
       self.measureNo = 0
@@ -45,6 +49,7 @@ class DF_MusicXML:
       self.file.write('  </work>\n')
       self.file.write('  <identification>\n')
       self.file.write('    <creator type="composer">'+str(self.progID)+'</creator>\n')
+      self.file.write('    <creator type="lyricist">'+str(self.Author)+'</creator>\n')
       self.file.write('  </identification>\n')
       self.file.write('  <part-list>\n')
       self.file.write('    <score-part id="P1">\n')
@@ -174,6 +179,20 @@ class DF_MusicXML:
          self.file.write('        <bar-style>light-light</bar-style>\n')
          self.file.write('      </barline>\n')
 
+   def addMeasureKeyChange(self, newKey):
+      if self.file is not None:
+         self.file.write('    </measure>\n')
+         self.measureNo += 1
+         self.file.write('    <measure number="'+str(self.measureNo)+'">\n')
+         self.file.write('      <barline location="left">\n')
+         self.file.write('        <bar-style>light-light</bar-style>\n')
+         self.file.write('      </barline>\n')
+         self.file.write('      <attributes>\n')
+         self.file.write('        <key>\n')
+         self.file.write('          <fifths>'+str(newKey)+'</fifths>\n')
+         self.file.write('        </key>\n')
+         self.file.write('      </attributes>\n')
+
    def addNote(self, MIDI_No, duration=None, lyric=None, position=None, tie=None): # duration: 4 = crotchet, 16 = semi-breve
       if self.file is not None:
          if duration is None:
@@ -250,6 +269,8 @@ class DF_MusicXML:
          for Bindex, bar in enumerate(verse):
             if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
                self.addMeasureDbl()
+            elif Bindex == len(verse)-1 and Vindex == len(notes)-1: # this is the very last bar; don't add a new bar
+               pass
             elif Bindex != 0:
                self.addMeasure()
             if lyrics is not None and positions is not None and ties is not None:
@@ -269,6 +290,8 @@ class DF_MusicXML:
          for Bindex, bar in enumerate(verse):
             if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
                self.addMeasureDbl()
+            elif Bindex == len(verse)-1 and Vindex == len(notes)-1: # this is the very last bar; don't add a new bar
+               pass
             elif Bindex != 0:
                self.addMeasure()
             if lyrics is not None and positions is not None and ties is not None:
@@ -288,6 +311,8 @@ class DF_MusicXML:
          for Bindex, bar in enumerate(verse):
             if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
                self.addMeasureDbl()
+            elif Bindex == len(verse)-1 and Vindex == len(notes)-1: # this is the very last bar; don't add a new bar
+               pass
             elif Bindex != 0:
                self.addMeasure()
             if lyrics is not None and positions is not None and ties is not None:
@@ -307,6 +332,8 @@ class DF_MusicXML:
          for Bindex, bar in enumerate(verse):
             if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
                self.addMeasureDbl()
+            elif Bindex == len(verse)-1 and Vindex == len(notes)-1: # this is the very last bar; don't add a new bar
+               pass
             elif Bindex != 0:
                self.addMeasure()
             if lyrics is not None and positions is not None and ties is not None:
@@ -320,3 +347,31 @@ class DF_MusicXML:
                   self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex])
       self.endPart()
 
+   def MIDI2Fifths(self, MIDI_Key):
+      MIDI_Key = int(MIDI_Key)
+      MIDI_Key = MIDI_Key%12
+      if MIDI_Key == 1: # D flat
+         fifths = -5
+      elif MIDI_Key == 2: # D
+         fifths = 2
+      elif MIDI_Key == 3: # E flat
+         fifths = -3
+      elif MIDI_Key == 4: # E
+         fifths = 4
+      elif MIDI_Key == 5: # F
+         fifths = -1
+      elif MIDI_Key == 6: # F sharp
+         fifths = 6
+      elif MIDI_Key == 7: # G
+         fifths = 1
+      elif MIDI_Key == 8: # A flat
+         fifths = -4
+      elif MIDI_Key == 9: # A
+         fifths = 3
+      elif MIDI_Key == 10: # B flat
+         fifths = -2
+      elif MIDI_Key == 11: # B
+         fifths = 5
+      else:
+         fifths = 0
+      return fifths

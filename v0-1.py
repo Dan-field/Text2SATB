@@ -2,32 +2,46 @@ from DF_TextInput import *
 from DF_SongPlanner import *
 from DF_MusicXML import *
 
-ProgramID = "Test_code v 0.1"
-WorkTitle = "This is a Test"
+ProgramID = "DF Word Score Sonifier v1.0"
+WorkTitle = "Untitled Sonification"
+Lyricist = ""
 
 Input = DF_TextInput()
+WorkTitle = Input.provideTitle()
+Lyricist = Input.provideLyricist()
 verses = Input.provideVerses()
 positions = Input.providePositions()
-Planner = DF_SongPlanner(verses, positions)
+scores = Input.provideScrabbleScores()
+Planner = DF_SongPlanner(verses, positions, scores)
+verseKeys =  Planner.getVerseKeys()
+Planner.getBassPart(Planner.homeKey)
+Planner.getTenorPart(Planner.homeKey)
+Planner.getAltoPart(Planner.homeKey)
+Planner.getSopPart(Planner.homeKey)
 
-print verses
-print positions
-print Planner.versesLinesSyllables
-
-Planner.planHarmonicStructure()
-
-#X = DF_MusicXML(WorkTitle, ProgramID)
-#sopNotes = [[60, 65, 57], [59, 61, 63]]
-#sopDurations = [[4, 4, 8], [4, 4, 8]]
-#sopLyric = [["boo", "yah", "yeah"],["har", "har", "har"]]
-#altNotes = [[60, 65, 57], [59, 61, 63]]
-#altDurations = [[4, 4, 8], [4, 4, 8]]
-#tenNotes = [[52, 52, 49, 48], [51, 53, 56]]
-#tenDurations = [[4, 4, 4, 4], [4, 4, 8]]
-#basNotes = [[48, 46, 45, 44, 41], [47, 49, 51]]
-#basDurations = [[4, 4, 4, 2, 2], [4, 4, 8]]
-#X.writeSop(sopNotes, sopDurations, sopLyric)
-#X.writeAlto(altNotes, altDurations)
-#X.writeTenor(tenNotes, tenDurations)
-#X.writeBass(basNotes, basDurations)
-#X.endXMLFile()
+X = DF_MusicXML(WorkTitle, ProgramID, Lyricist)
+basNotes = Planner.bassNotes
+basDurations = Planner.bassRhythms
+basLyric = Planner.bassWords
+basPos = Planner.bassPositions
+basTies = Planner.bassTies
+tenNotes = Planner.tenNotes
+tenDurations = Planner.tenRhythms
+tenLyric = Planner.tenWords
+tenPos = Planner.tenPositions
+tenTies = Planner.tenTies
+altoNotes = Planner.altoNotes
+altoDurations = Planner.altoRhythms
+altoLyric = Planner.altoWords
+altoPos = Planner.altoPositions
+altoTies = Planner.altoTies
+sopNotes = Planner.sopNotes
+sopDurations = Planner.sopRhythms
+sopLyric = Planner.sopWords
+sopPos = Planner.sopPositions
+sopTies = Planner.sopTies
+X.writeSop(sopNotes, sopDurations, sopLyric, sopPos, sopTies)
+X.writeAlto(altoNotes, altoDurations, altoLyric, altoPos, altoTies)
+X.writeTenor(tenNotes, tenDurations, tenLyric, tenPos, tenTies)
+X.writeBass(basNotes, basDurations, basLyric, basPos, basTies)
+X.endXMLFile()

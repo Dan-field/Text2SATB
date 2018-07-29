@@ -18,7 +18,7 @@ class DF_SongPlanner:
       self.voice = 1 # 1 Soprano, 2 Alto, 3 Tenor, 4 Bass
       self.numberOfVerses = len(self.verses)
       self.versesLinesSyllables = self.getLinesAndSyllables(self.verses)
-      self.chordPlan = self.planHarmonicStructure()
+      self.chordPlan, self.keysOfVerses = self.planHarmonicStructure()
       self.chordBase, self.chordType = self.determineChordSequence()
       self.rangeSop = [60, 80]
       self.rangeAlto = [55, 76]
@@ -51,6 +51,7 @@ class DF_SongPlanner:
       # Try to keep the chord references numeric/relative for easy adaptation
       key = 0 # number zero will represent the 'home' key
       verseKey = 0
+      verseKeys = []
       lineKey = 0
       chords = [] # start an empty list to hold the chords
       for index, verse in enumerate(self.verses):
@@ -66,6 +67,7 @@ class DF_SongPlanner:
             keyshift = self.keyShift(int(verseSyllables/20)%12) # this shifts the key by one step for every 20 syllables in the verse
             # but if there are more than 240 syllables, it goes back to zero and starts over again
             verseKey += keyshift
+         verseKeys.append(verseKey)
          for i, line in enumerate(verse): # similarly, we might change key from line to line using the same sort of logic
             if i == 0: # first line
                lineKey = verseKey # first line of each verse is in the verse's key
@@ -76,7 +78,10 @@ class DF_SongPlanner:
                keyshift = self.keyShift(int(lineSyllables/12)%12) # shift key one 'step' for every 12 syllables in the line
                lineKey += keyshift
             chords[index].append(lineKey)
-      return chords
+      return chords, verseKeys
+
+   def getVerseKeys(self):
+      return self.keysOfVerses
 
    def determineChordSequence(self):
       # sets a chord sequence based on the scrabble scores and the pre-determined harmonic structure
@@ -187,7 +192,7 @@ class DF_SongPlanner:
                      beatCount = 0
             if beatCount%16 != 0: # we're at the end of the text line but we're not at the end of a bar
                L = int(4-(beatCount%4)) # counts to next crotchet
-               if L > 0:
+               if L > 0 and L < 4:
                   sylLengths[index][i].append([L])
                   sylRest[index][i].append([True])
                   beatCount += L

@@ -116,6 +116,18 @@ class DF_TextInput:
    def provideScrabbleScores(self):
       return self.scrabbleScores
 
+   def provideTitle(self):
+      usrTitle = raw_input("please enter a Title for the work\n: ")
+      if usrTitle == "":
+         usrTitle = None
+      return usrTitle
+
+   def provideLyricist(self):
+      usrLyricist = raw_input("please enter the Lyricist's name\n: ")
+      if usrLyricist == "":
+         usrLyricist = None
+      return usrLyricist
+
    def scoreScrabble(self, string):
       # adds up the Scrabble score of the string
       runningTotal = 0
