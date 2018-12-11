@@ -5,6 +5,7 @@
 # check out www.github.com/dan-field/Text2SATB for info and rights #
 ####################################################################
 
+import prompt
 
 class DF_Syllables:
    def __init__(self):
@@ -45,8 +46,7 @@ class DF_Syllables:
             adjusted_ending = self.breakDownFromBack(rest, ending)
             adjusted_endLength = 0
             for syllable in adjusted_ending:
-               for letter in syllable:
-                  adjusted_endLength += 1
+               adjusted_endLength = len(syllable)
             if adjusted_endLength > endLength:
                rest = rest[:len(rest)+endLength-adjusted_endLength]
          restBrokenDown = self.r(rest)
@@ -149,7 +149,7 @@ class DF_Syllables:
       # now check for 'e' endings (on the whole word, or the word with suffix removed, as applicable)
       if w[-1] == "e": # last letter is 'e'
          if w[-2] not in self.vowels and w[-3] in self.vowels_y: # second-last is consonant and third-last is vowel
-            ending = word[-3]+word[-2]+word[-1] # this is a Vowel-Consonant-e ending
+            
             if w[-4] not in self.vowels and len(w) == 4: # it's cons-vowel-cons-'e' so it's a single syllable (note the 'le' ending has already been dealt with in the 'searchSuffix' function)
                if suffix == "":
                   return [word]
@@ -456,15 +456,15 @@ class DF_TextInput:
       lineText = []
       inputText = []
       infile = None
-      usrFileName = raw_input("please enter the filename of the text input file, e.g. 'mypoem.txt'\n: ")
+      usrFileName = prompt.string("please enter the filename of the text input file, e.g. 'mypoem.txt': ")
       try:
          infile = open(usrFileName, "r")
       except (OSError, IOError):
          infile = None
-         print "\nThere was an issue attempting to open the file."
-         print "Please double-check your filename; "+usrFileName+"\n"
-         print "Note your input text file must be in the same"
-         print "folder as the Python files."
+         print("\nThere was an issue attempting to open the file.")
+         print("Please double-check your filename; "+usrFileName+"\n")
+         print("Note your input text file must be in the same")
+         print("folder as the Python files.")
          return
       if infile is not None:
          for line in infile.readlines():
@@ -526,11 +526,11 @@ class DF_TextInput:
                      syllables[-1] = syllables[-1]+punctuation # add the punctuation back on where it came from
                   if punctuation in ".;:!?*": # these punctuation marks will create new lines
                      self.lastWord = True # this will be the last word in this line
-               positions = range(len(syllables)) # start an 'empty' list with as many members as there are syllables in the word
+               positions = list(range(len(syllables))) # start an 'empty' list with as many members as there are syllables in the word
                if len(positions) == 1: # this means there's only one syllable in the word
                   positions[0] = "single" # this follows the MusicXML 'syllabic' convention
                else: # there are two or more syllables in the word
-                  for index, position in enumerate(positions):
+                  for index, _ in enumerate(positions):
                      if index == 0: # first syllable
                         positions[index] = "begin"
                      elif index == len(positions)-1: # last syllable
@@ -553,13 +553,13 @@ class DF_TextInput:
       return self.scrabbleScores
 
    def provideTitle(self):
-      usrTitle = raw_input("please enter a Title for the work\n: ")
+      usrTitle = prompt.string("please enter a Title for the work: ")
       if usrTitle == "":
          usrTitle = None
       return usrTitle
 
    def provideLyricist(self):
-      usrLyricist = raw_input("please enter the Lyricist's name\n: ")
+      usrLyricist = prompt.string("please enter the Lyricist's name: ")
       if usrLyricist == "":
          usrLyricist = None
       return usrLyricist
@@ -627,7 +627,7 @@ class DF_SongPlanner:
    def planHarmonicStructure(self):
       # looks at the incoming verse structure and generates a chord sequence
       # Try to keep the chord references numeric/relative for easy adaptation
-      key = 0 # number zero will represent the 'home' key
+      
       verseKey = 0
       verseKeys = []
       lineKey = 0
@@ -646,7 +646,7 @@ class DF_SongPlanner:
             # but if there are more than 240 syllables, it goes back to zero and starts over again
             verseKey += keyshift
          verseKeys.append(verseKey)
-         for i, line in enumerate(verse): # similarly, we might change key from line to line using the same sort of logic
+         for i, _ in enumerate(verse): # similarly, we might change key from line to line using the same sort of logic
             if i == 0: # first line
                lineKey = verseKey # first line of each verse is in the verse's key
             elif index == len(self.verses)-1 and i == len(self.verses[index])-1: # this is the last line of the last verse
@@ -671,7 +671,7 @@ class DF_SongPlanner:
          for i, line in enumerate(verse):
             chordBase[index].append([])
             chordType[index].append([])
-            for j, syllable in enumerate(line):
+            for j, _ in enumerate(line):
                cycleMove = 0
                chordComplexity = 0
                # we want to set a chord degree and type that reflects the Scrabble score of the word
@@ -811,7 +811,7 @@ class DF_SongPlanner:
          count = 0
          barNo = -1
          for i, line in enumerate(verse):
-            for j, syllable in enumerate(line):
+            for j, _ in enumerate(line):
                keyRef = self.chordPlan[index][i]
                chordDegree = self.chordBase[index][i][j] # this is just the step number - it needs to be converted to a chromatic degree number
                chordDegree = self.convertChordDegree(chordDegree)
@@ -828,7 +828,7 @@ class DF_SongPlanner:
                differences = [abs(loose_target - float(note)) for note in bassTargets]
                closest = differences.index(min(differences))
                thisNote = bassTargets[closest] # pick the bass note that is closest to the comfortable mid point
-               thisDuration = 4
+               
                # we have all the info we need to start assembling the Bass part
                if count%16 == 0: # the previous bar is full
                   bassNotes[index].append([])
@@ -842,7 +842,6 @@ class DF_SongPlanner:
                bassPositions[index][barNo].append(self.positions[index][i][j])
                if len(self.durations[index][i][j]) == 1: # the note does not cross a barline
                   L = self.durations[index][i][j][0]
-                  R = self.sylRests[index][i][j][0]
                   bassRhythms[index][barNo].append(L)
                   bassTies[index][barNo].append(None)
                   count += L
@@ -895,7 +894,7 @@ class DF_SongPlanner:
          count = 0
          barNo = -1
          for i, line in enumerate(verse):
-            for j, syllable in enumerate(line):
+            for j, _ in enumerate(line):
                keyRef = self.chordPlan[index][i]
                chordDegree = self.chordBase[index][i][j] # this is just the step number - it needs to be converted to a chromatic degree number
                chordDegree = self.convertChordDegree(chordDegree)
@@ -914,7 +913,7 @@ class DF_SongPlanner:
                differences = [abs(loose_target - float(note)) for note in tenTargets]
                closest = differences.index(min(differences))
                thisNote = tenTargets[closest] # pick the tenor note that is closest to the comfortable mid point
-               thisDuration = 4
+               
                # we have all the info we need to start assembling the Tenor part
                if count%16 == 0: # the previous bar is full
                   tenNotes[index].append([])
@@ -1030,7 +1029,7 @@ class DF_SongPlanner:
          count = 0
          barNo = -1
          for i, line in enumerate(verse):
-            for j, syllable in enumerate(line):
+            for j, _ in enumerate(line):
                keyRef = self.chordPlan[index][i]
                chordDegree = self.chordBase[index][i][j] # this is just the step number - it needs to be converted to a chromatic degree number
                chordDegree = self.convertChordDegree(chordDegree)
@@ -1049,7 +1048,7 @@ class DF_SongPlanner:
                differences = [abs(loose_target - float(note)) for note in altoTargets]
                closest = differences.index(min(differences))
                thisNote = altoTargets[closest] # pick the alto note that is closest to the comfortable mid point
-               thisDuration = 4
+               
                # we have all the info we need to start assembling the Alto part
                if count%16 == 0: # the previous bar is full
                   altoNotes[index].append([])
@@ -1189,9 +1188,7 @@ class DF_SongPlanner:
                shiftedScale = []
                for note in scale:
                   shiftedScale.append(homeKey+keyRef+note)
-               sopScaleTargets = self.buildFullRange(shiftedScale, self.rangeSop[0], self.rangeSop[1])
-               if i == len(verse)-1 and j == len(line)-1:
-                  sopScaleTargets = sopChordTargets
+               
                # LOOSE TARGET needs to be modified so that it's a melody note -------------------------------
                loose_target = 70.4 # seek out a comfortable mid-point in the soprano range
                if chordType == 0:
@@ -1201,7 +1198,7 @@ class DF_SongPlanner:
                differences = [abs(loose_target - float(note)) for note in sopChordTargets]
                closest = differences.index(min(differences))
                thisNote = sopChordTargets[closest] # pick the soprano note that is closest to the comfortable mid point
-               thisDuration = 4
+               
                # we have all the info we need to start assembling the Soprano part
                if count%16 == 0: # the previous bar is full
                   sopNotes[index].append([])
@@ -1268,7 +1265,6 @@ class DF_SongPlanner:
                         self.sopLatestNote = thisNote
                   else:
                      L = self.durations[index][i][j][0]
-                     R = self.sylRests[index][i][j][0]
                      sopRhythms[index][barNo].append(L)
                      sopTies[index][barNo].append(None)
                      sopNotes[index][barNo].append(thisNote)
@@ -1324,9 +1320,7 @@ class DF_SongPlanner:
       for verse in verses:
          resultVerse = []
          for line in verse:
-            syllableCount = 0
-            for syllable in line:
-               syllableCount += 1
+            syllableCount = len(line)
             resultVerse.append(syllableCount)
          resultSong.append(resultVerse)
       return resultSong
@@ -1587,17 +1581,17 @@ class DF_MusicXML:
       self.measureNo = 0
       self.voice = 1 # 1 Soprano, 2 Alto, 3 Tenor, 4 Bass
       self.flats = True # assumes black notes should be written as flats - will need to be updated once a 'key' functionality is added
-      usrFileName = raw_input("please enter a name for the output file\n: ")
+      usrFileName = prompt.string("please enter a name for the output file: ")
       self.fileName = usrFileName+".musicxml"
       try:
          self.file = open(self.fileName, "w")
       except (OSError, IOError):
          self.file = None
-         print "\nThere was an issue with the file operation."
-         print "Please double-check your filename.\n"
-         print "Note the MusicXML file will attempt to save in the"
-         print "same folder as the Python files; please ensure you"
-         print "have write permission for that folder."
+         print("\nThere was an issue with the file operation.")
+         print("Please double-check your filename.\n")
+         print("Note the MusicXML file will attempt to save in the")
+         print("same folder as the Python files; please ensure you")
+         print("have write permission for that folder.")
          return
       self.file.write('<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n')
       self.file.write('<!DOCTYPE score-partwise PUBLIC\n')
@@ -1834,13 +1828,13 @@ class DF_MusicXML:
             elif Bindex != 0:
                self.addMeasure()
             if lyrics is not None and positions is not None and ties is not None:
-               for Nindex, note in enumerate(bar):
+               for Nindex, _ in enumerate(bar):
                   self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
             elif lyrics is not None:
-               for Nindex, note in enumerate(bar):
+               for Nindex, _ in enumerate(bar):
                   self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
             else:
-               for Nindex, note in enumerate(bar):
+               for Nindex, _ in enumerate(bar):
                   self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex])
       self.endPart()
 
@@ -1855,13 +1849,13 @@ class DF_MusicXML:
             elif Bindex != 0:
                self.addMeasure()
             if lyrics is not None and positions is not None and ties is not None:
-               for Nindex, note in enumerate(bar):
+               for Nindex, _ in enumerate(bar):
                   self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
             elif lyrics is not None:
-               for Nindex, note in enumerate(bar):
+               for Nindex, _ in enumerate(bar):
                   self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
             else:
-               for Nindex, note in enumerate(bar):
+               for Nindex, _ in enumerate(bar):
                   self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex])
       self.endPart()
 
@@ -1876,13 +1870,13 @@ class DF_MusicXML:
             elif Bindex != 0:
                self.addMeasure()
             if lyrics is not None and positions is not None and ties is not None:
-               for Nindex, note in enumerate(bar):
+               for Nindex, _ in enumerate(bar):
                   self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
             elif lyrics is not None:
-               for Nindex, note in enumerate(bar):
+               for Nindex, _ in enumerate(bar):
                   self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
             else:
-               for Nindex, note in enumerate(bar):
+               for Nindex, _ in enumerate(bar):
                   self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex])
       self.endPart()
 
@@ -1897,13 +1891,13 @@ class DF_MusicXML:
             elif Bindex != 0:
                self.addMeasure()
             if lyrics is not None and positions is not None and ties is not None:
-               for Nindex, note in enumerate(bar):
+               for Nindex, _ in enumerate(bar):
                   self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
             elif lyrics is not None:
-               for Nindex, note in enumerate(bar):
+               for Nindex, _ in enumerate(bar):
                   self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
             else:
-               for Nindex, note in enumerate(bar):
+               for Nindex, _ in enumerate(bar):
                   self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex])
       self.endPart()
 
