@@ -6,6 +6,7 @@
 ####################################################################
 
 import prompt
+import lxml.etree as tree
 
 class DF_Syllables:
    def __init__(self):
@@ -456,20 +457,24 @@ class DF_TextInput:
       lineText = []
       inputText = []
       infile = None
-      usrFileName = prompt.string("please enter the filename of the text input file, e.g. 'mypoem.txt': ")
-      try:
-         infile = open(usrFileName, "r")
-      except (OSError, IOError):
-         infile = None
-         print("\nThere was an issue attempting to open the file.")
-         print("Please double-check your filename; "+usrFileName+"\n")
-         print("Note your input text file must be in the same")
-         print("folder as the Python files.")
-         return
+
+      while infile is None:
+         usrFileName = prompt.string("please enter the filename of the text input file, e.g. 'mypoem.txt': ")
+
+         try:
+            infile = open(usrFileName, "r")
+         except (OSError, IOError):
+            infile = None
+            print("\nThere was an issue attempting to open the file.")
+            print("Please double-check your filename; "+usrFileName+"\n")
+            print("Note your input text file must be in the same")
+            print("folder as the Python files.")
+
       if infile is not None:
          for line in infile.readlines():
             inputText.append(line)
          infile.close()
+
       # The input file has been read, and all of the text is in 'inputText'
       lineText.append("---BREAK---") # this will be used to signify a new verse
       noted = True # this is a flag to avoid multiple 'new verse' indications in a row
@@ -1583,323 +1588,290 @@ class DF_MusicXML:
       self.flats = True # assumes black notes should be written as flats - will need to be updated once a 'key' functionality is added
       usrFileName = prompt.string("please enter a name for the output file: ")
       self.fileName = usrFileName+".musicxml"
-      try:
-         self.file = open(self.fileName, "w")
-      except (OSError, IOError):
-         self.file = None
-         print("\nThere was an issue with the file operation.")
-         print("Please double-check your filename.\n")
-         print("Note the MusicXML file will attempt to save in the")
-         print("same folder as the Python files; please ensure you")
-         print("have write permission for that folder.")
-         return
-      self.file.write('<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n')
-      self.file.write('<!DOCTYPE score-partwise PUBLIC\n')
-      self.file.write('     "-//Recordare//DTD MusicXML 3.1 Partwise//EN"\n')
-      self.file.write('     "http://www.musicxml.org/dtds/partwise.dtd">\n')
-      self.file.write('<score-partwise version="3.1">\n')
-      self.file.write('  <work>\n')
-      self.file.write('    <work-title>'+str(self.Title)+'</work-title>\n')
-      self.file.write('  </work>\n')
-      self.file.write('  <identification>\n')
-      self.file.write('    <creator type="composer">'+str(self.progID)+'</creator>\n')
-      self.file.write('    <creator type="lyricist">'+str(self.Author)+'</creator>\n')
-      self.file.write('  </identification>\n')
-      self.file.write('  <part-list>\n')
-      self.file.write('    <score-part id="P1">\n')
-      self.file.write('      <part-name>Soprano</part-name>\n')
-      self.file.write('    </score-part>\n')
-      self.file.write('    <score-part id="P2">\n')
-      self.file.write('      <part-name>Alto</part-name>\n')
-      self.file.write('    </score-part>\n')
-      self.file.write('    <score-part id="P3">\n')
-      self.file.write('      <part-name>Tenor</part-name>\n')
-      self.file.write('    </score-part>\n')
-      self.file.write('    <score-part id="P4">\n')
-      self.file.write('      <part-name>Bass</part-name>\n')
-      self.file.write('    </score-part>\n')
-      self.file.write('  </part-list>\n')
+
+      # building up the xml tree
+      self.root = tree.Element('score-partwise', attrib={'version':'3.1'})
+      work = tree.SubElement(self.root, 'work')
+      tree.SubElement(work, 'work-title').text = self.Title
+
+      # author
+      ident = tree.SubElement(self.root,'identification')
+      tree.SubElement(ident, 'creator', attrib={'type':'composer'}).text = self.progID
+      tree.SubElement(ident, 'creator', attrib={'type':'lyricist'}).text = self.Author
+
+      # part list
+      part_list = tree.SubElement(self.root, 'part-list')
+      score_info = {'P1':'Soprano', 'P2':'Alto', 'P3':'Tenor', 'P4':'Bass'}.items()
+      for score_id, score_type in score_info:
+         score_part = tree.SubElement(part_list, 'score-part', attrib={'id': score_id})
+         tree.SubElement(score_part, 'part-name').text = score_type
+
+   # this writes a section
+   # returns a tuple with the part and the current measure
+   def startSection(self, section):
+      if self.root is not None:
+
+         part_id = str(section['part_id'])
+         clef_sign = str(section['clef_sign'])
+         clef_line = str(section['clef_line'])
+
+         part = tree.SubElement(self.root, 'part', attrib={'id': part_id})
+         measure = tree.SubElement(part, 'measure', attrib={'number': str(self.measureNo)})
+         attributes = tree.SubElement(measure, 'attributes')
+         tree.SubElement(attributes, 'divisions').text = str(self.DIVISIONS)
+
+         key = tree.SubElement(attributes, 'key')
+         tree.SubElement(key, 'fifths').text = '-3'
+
+         time = tree.SubElement(attributes, 'time')
+         tree.SubElement(time, 'beats').text = '4'
+         tree.SubElement(time, 'beat-type').text = '4'
+
+         clef = tree.SubElement(attributes, 'clef', attrib= {'number': '1'})
+         tree.SubElement(clef, 'sign').text = clef_sign
+         tree.SubElement(clef, 'line').text = clef_line
+
+         # tenors get an octave change?
+         if part_id == 'P3':
+            tree.SubElement(clef, 'clef-octave-change').text = '-1'
+
+         return (part, measure)
 
    def startSoprano(self):
-      if self.file is not None:
-         self.measureNo = 0
-         self.voice = 1
-         self.file.write('  <part id="P1">\n')
-         self.file.write('    <measure number="'+str(self.measureNo)+'">\n')
-         self.file.write('      <attributes>\n')
-         self.file.write('        <divisions>'+str(self.DIVISIONS)+'</divisions>\n')
-         self.file.write('        <key>\n')
-         self.file.write('          <fifths>-3</fifths>\n')
-         self.file.write('        </key>\n')
-         self.file.write('        <time>\n')
-         self.file.write('          <beats>4</beats>\n')
-         self.file.write('          <beat-type>4</beat-type>\n')
-         self.file.write('        </time>\n')
-         self.file.write('        <clef number="1">\n')
-         self.file.write('          <sign>G</sign>\n')
-         self.file.write('          <line>2</line>\n')
-         self.file.write('        </clef>\n')
-         self.file.write('      </attributes>\n')
+      self.measureNo = 0
+      self.voice = 1
+      
+      # writing the soprano elements to the xml tree
+      section = {}
+      section['part_id'] = 'P1'
+      section['clef_sign'] = 'G'
+      section['clef_line'] = '2'
+      return self.startSection(section)
+
 
    def startAlto(self):
-      if self.file is not None:
-         self.measureNo = 0
-         self.voice = 2
-         self.file.write('  <part id="P2">\n')
-         self.file.write('    <measure number="'+str(self.measureNo)+'">\n')
-         self.file.write('      <attributes>\n')
-         self.file.write('        <divisions>'+str(self.DIVISIONS)+'</divisions>\n')
-         self.file.write('        <key>\n')
-         self.file.write('          <fifths>-3</fifths>\n')
-         self.file.write('        </key>\n')
-         self.file.write('        <time>\n')
-         self.file.write('          <beats>4</beats>\n')
-         self.file.write('          <beat-type>4</beat-type>\n')
-         self.file.write('        </time>\n')
-         self.file.write('        <clef number="1">\n')
-         self.file.write('          <sign>G</sign>\n')
-         self.file.write('          <line>2</line>\n')
-         self.file.write('        </clef>\n')
-         self.file.write('      </attributes>\n')
+      self.measureNo = 0
+      self.voice = 2
+      
+      # writing the alto elements to the xml tree
+      section = {}
+      section['part_id'] = 'P2'
+      section['clef_sign'] = 'G'
+      section['clef_line'] = '2'
+      return self.startSection(section)
 
    def startTenor(self):
-      if self.file is not None:
-         self.measureNo = 0
-         self.voice = 3
-         self.file.write('  <part id="P3">\n')
-         self.file.write('    <measure number="'+str(self.measureNo)+'">\n')
-         self.file.write('      <attributes>\n')
-         self.file.write('        <divisions>'+str(self.DIVISIONS)+'</divisions>\n')
-         self.file.write('        <key>\n')
-         self.file.write('          <fifths>-3</fifths>\n')
-         self.file.write('        </key>\n')
-         self.file.write('        <time>\n')
-         self.file.write('          <beats>4</beats>\n')
-         self.file.write('          <beat-type>4</beat-type>\n')
-         self.file.write('        </time>\n')
-         self.file.write('        <clef number="1">\n')
-         self.file.write('          <sign>G</sign>\n')
-         self.file.write('          <line>2</line>\n')
-         self.file.write('          <clef-octave-change>-1</clef-octave-change>\n')
-         self.file.write('        </clef>\n')
-         self.file.write('      </attributes>\n')
+      self.measureNo = 0
+      self.voice = 3
+      
+      # writing the tenor elements to the xml tree
+      section = {}
+      section['part_id'] = 'P3'
+      section['clef_sign'] = 'G'
+      section['clef_line'] = '2'
+      return self.startSection(section)
 
    def startBass(self):
-      if self.file is not None:
-         self.measureNo = 0
-         self.voice = 4
-         self.file.write('  <part id="P4">\n')
-         self.file.write('    <measure number="'+str(self.measureNo)+'">\n')
-         self.file.write('      <attributes>\n')
-         self.file.write('        <divisions>'+str(self.DIVISIONS)+'</divisions>\n')
-         self.file.write('        <key>\n')
-         self.file.write('          <fifths>-3</fifths>\n')
-         self.file.write('        </key>\n')
-         self.file.write('        <time>\n')
-         self.file.write('          <beats>4</beats>\n')
-         self.file.write('          <beat-type>4</beat-type>\n')
-         self.file.write('        </time>\n')
-         self.file.write('        <clef number="1">\n')
-         self.file.write('          <sign>F</sign>\n')
-         self.file.write('          <line>4</line>\n')
-         self.file.write('        </clef>\n')
-         self.file.write('      </attributes>\n')
+      self.measureNo = 0
+      self.voice = 4
+      
+      # writing the bass elements to the xml tree
+      section = {}
+      section['part_id'] = 'P4'
+      section['clef_sign'] = 'F'
+      section['clef_line'] = '4'
+      return self.startSection(section)
 
-   def endPart(self):
-      if self.file is not None:
-         self.file.write('      <barline location="right">\n')
-         self.file.write('        <bar-style>light-heavy</bar-style>\n')
-         self.file.write('      </barline>\n')
-         self.file.write('    </measure>\n')
-         self.file.write('  </part>\n')
+   def endPart(self, measure):
+      barline = tree.SubElement(measure, 'barline', attrib={'location': 'right'})
+      tree.SubElement(barline, 'bar-style').text = 'light-heavy'
 
    def endXMLFile(self):
-      if self.file is not None:
-         self.file.write('</score-partwise>\n')
-         self.file.close()
+      string = tree.tostring(self.root, encoding = 'UTF-8', pretty_print = True, standalone = False, doctype = '<!DOCTYPE score-partwise PUBLIC\n\t"-//Recordare//DTD MusicXML 3.1 Partwise//EN"\n\t"http://www.musicxml.org/dtds/partwise.dtd">')
 
-   def addMeasure(self):
-      if self.file is not None:
-         self.file.write('    </measure>\n')
-         self.measureNo += 1
-         self.file.write('    <measure number="'+str(self.measureNo)+'">\n')
+      try:
+         with open(self.fileName, "wb") as text_file:
+            text_file.write(string)
+      except (OSError, IOError):
+         print("\nThere was an issue with the file operation.")
+         print("Please double-check your filename and folder permissions.\n")
+      
 
-   def addMeasureDbl(self):
-      if self.file is not None:
-         self.file.write('    </measure>\n')
-         self.measureNo += 1
-         self.file.write('    <measure number="'+str(self.measureNo)+'">\n')
-         self.file.write('      <barline location="left">\n')
-         self.file.write('        <bar-style>light-light</bar-style>\n')
-         self.file.write('      </barline>\n')
+   # takes in the current part
+   # returns the new measure
+   def addMeasure(self, part):
+      self.measureNo += 1
+      measure = tree.SubElement(part, 'measure', attrib={'number':str(self.measureNo)})
+      return measure
 
-   def addMeasureKeyChange(self, newKey):
-      if self.file is not None:
-         self.file.write('    </measure>\n')
-         self.measureNo += 1
-         self.file.write('    <measure number="'+str(self.measureNo)+'">\n')
-         self.file.write('      <barline location="left">\n')
-         self.file.write('        <bar-style>light-light</bar-style>\n')
-         self.file.write('      </barline>\n')
-         self.file.write('      <attributes>\n')
-         self.file.write('        <key>\n')
-         self.file.write('          <fifths>'+str(newKey)+'</fifths>\n')
-         self.file.write('        </key>\n')
-         self.file.write('      </attributes>\n')
+   # takes in the current part
+   # returns the new measure
+   def addMeasureDbl(self, part):
+      self.measureNo += 1
+      measure = tree.SubElement(part, 'measure',attrib={'number': str(self.measureNo)})
+      barline = tree.SubElement(measure, 'barline', attrib={'location':'left'})
+      tree.SubElement(barline, 'bar-style').text = 'light-light'
 
-   def addNote(self, MIDI_No, duration=None, lyric=None, position=None, tie=None): # duration: 4 = crotchet, 16 = semi-breve
-      if self.file is not None:
-         if duration is None:
-            duration = 4 # default to a crotchet
-         if lyric is None:
-            lyric = "" # default to no text
-         note_type, dotted, tiedToMinim = self.MIDI.Duration2Type(duration)
-         self.file.write('      <note>\n')
+      return measure
+
+   def addNote(self, measure, MIDI_No, duration=None, lyric=None, position=None, tie=None): # duration: 4 = crotchet, 16 = semi-breve
+      if duration is None:
+         duration = 4 # default to a crotchet
+      if lyric is None:
+         lyric = "" # default to no text
+      note_type, dotted, tiedToMinim = self.MIDI.Duration2Type(duration)
+
+      note = tree.SubElement(measure, 'note')
+
+      if MIDI_No != "RRR":
+         octave, step, alter = self.MIDI.MIDI2Note(MIDI_No, self.flats)
+
+         pitch = tree.SubElement(note, 'pitch')
+         tree.SubElement(pitch, 'step').text = str(step)
+
+         if alter != 0:
+            tree.SubElement(pitch, 'alter').text = str(alter)
+         
+         tree.SubElement(pitch, 'octave').text = str(octave)
+      else:
+         tree.SubElement(note, 'rest')
+
+      if tiedToMinim is False:
+         tree.SubElement(note, 'duration').text = str(duration)
+      else:
+         tree.SubElement(note, 'duration').text = str(duration - 8)
+
+      tree.SubElement(note, 'voice').text = str(self.voice)
+      tree.SubElement(note, 'type').text = note_type
+
+      if dotted is True:
+         tree.SubElement(note, 'dot')
+
+      if tie is not None and tiedToMinim is False:
+         notations = tree.SubElement(note, 'notations')
+         tree.SubElement(notations, 'tied', attrib={'type': str(tie)})
+
+      if tiedToMinim is True:
+         notations = tree.SubElement(note, 'notations')
+         
+         if tie == "stop":
+            tree.SubElement(notations, 'tied', attrib={'type': 'stop'})
+         
+         tree.SubElement(notations, 'tied', attrib={'type': 'start'})
+
+      lyric_node = tree.SubElement(note, 'lyric')
+
+      if position is not None:
+         tree.SubElement(lyric_node, 'syllabic').text = str(position)
+
+      tree.SubElement(lyric_node, 'text').text = lyric
+
+      if tiedToMinim is True:
+         note = tree.SubElement(measure, 'note')
          if MIDI_No != "RRR":
-            octave, step, alter = self.MIDI.MIDI2Note(MIDI_No, self.flats)
-            self.file.write('        <pitch>\n')
-            self.file.write('          <step>'+str(step)+'</step>\n')
+
+            pitch = tree.SubElement(note, 'pitch')
+            tree.SubElement(pitch, 'step').text = str(step)
+
             if alter != 0:
-               self.file.write('          <alter>'+str(alter)+'</alter>\n')
-            self.file.write('          <octave>'+str(octave)+'</octave>\n')
-            self.file.write('        </pitch>\n')
+               tree.SubElement(pitch, 'alter').text = str(alter)
+            
+            tree.SubElement(pitch, 'octave').text = str(octave)
          else:
-            self.file.write('        <rest/>\n')
-         if tiedToMinim is False:
-            self.file.write('        <duration>'+str(duration)+'</duration>\n')
-         else:
-            self.file.write('        <duration>'+str(duration-8)+'</duration>\n')
-         self.file.write('        <voice>'+str(self.voice)+'</voice>\n')
-         self.file.write('        <type>'+str(note_type)+'</type>\n')
-         if dotted is True:
-            self.file.write('        <dot></dot>\n')
-         if tie is not None and tiedToMinim is False:
-            self.file.write('        <notations>\n')
-            self.file.write('          <tied type="'+str(tie)+'"></tied>\n')
-            self.file.write('        </notations>\n')
-         if tiedToMinim is True:
-            self.file.write('        <notations>\n')
-            if tie == "stop":
-               self.file.write('          <tied type="stop"></tied>\n')
-            self.file.write('          <tied type="start"></tied>\n')
-            self.file.write('        </notations>\n')            
-         self.file.write('        <lyric>\n')
-         if position is not None:
-            self.file.write('          <syllabic>'+str(position)+'</syllabic>\n')
-         self.file.write('          <text>'+str(lyric)+'</text>\n')
-         self.file.write('        </lyric>\n')
-         self.file.write('      </note>\n')
-         if tiedToMinim is True:
-            self.file.write('      <note>\n')
-            if MIDI_No != "RRR":
-               self.file.write('        <pitch>\n')
-               self.file.write('          <step>'+str(step)+'</step>\n')
-               if alter != 0:
-                  self.file.write('          <alter>'+str(alter)+'</alter>\n')
-               self.file.write('          <octave>'+str(octave)+'</octave>\n')
-               self.file.write('        </pitch>\n')
-            else:
-               self.file.write('        <rest/>\n')
-            self.file.write('        <duration>8</duration>\n')
-            self.file.write('        <voice>'+str(self.voice)+'</voice>\n')
-            self.file.write('        <type>half</type>\n')
-            self.file.write('        <notations>\n')
-            self.file.write('          <tied type="stop"></tied>\n')
-            if tie == "start":
-               self.file.write('          <tied type="start"></tied>\n')
-            self.file.write('        </notations>\n')
-            self.file.write('      </note>\n')
+            tree.SubElement(note, 'rest')
+         
+         tree.SubElement(note, 'duration').text = '8'
+         tree.SubElement(note, 'voice').text = str(self.voice)
+         tree.SubElement(note, 'type').text = 'half'
 
-
-   def backOneBar(self):
-      if self.file is not None:
-         self.file.write('      <backup>\n')
-         self.file.write('        <duration>'+str(int(self.DIVISIONS*4))+'</duration>\n')
-         self.file.write('      </backup>\n')
+         notations = tree.SubElement(note, 'notations')
+         tree.SubElement(notations, 'tied', attrib={'type':'stop'})
+         if tie == "start":
+            tree.SubElement(notations, 'tied', attrib={'tied':'start'})
 
    def writeSop(self, notes, durations, lyrics=None, positions=None, ties=None):
-      self.startSoprano()
+      part, measure = self.startSoprano()
       for Vindex, verse in enumerate(notes):
          for Bindex, bar in enumerate(verse):
             if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
-               self.addMeasureDbl()
+               measure = self.addMeasureDbl(part)
             elif Bindex == len(verse)-1 and Vindex == len(notes)-1: # this is the very last bar; don't add a new bar
                pass
             elif Bindex != 0:
-               self.addMeasure()
+               measure = self.addMeasure(part)
             if lyrics is not None and positions is not None and ties is not None:
                for Nindex, _ in enumerate(bar):
-                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
+                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
             elif lyrics is not None:
                for Nindex, _ in enumerate(bar):
-                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
+                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
             else:
                for Nindex, _ in enumerate(bar):
-                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex])
-      self.endPart()
+                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex])
+      self.endPart(measure)
 
    def writeAlto(self, notes, durations, lyrics=None, positions=None, ties=None):
-      self.startAlto()
+      part, measure = self.startAlto()
       for Vindex, verse in enumerate(notes):
          for Bindex, bar in enumerate(verse):
             if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
-               self.addMeasureDbl()
+               measure = self.addMeasureDbl(part)
             elif Bindex == len(verse)-1 and Vindex == len(notes)-1: # this is the very last bar; don't add a new bar
                pass
             elif Bindex != 0:
-               self.addMeasure()
+               measure = self.addMeasure(part)
             if lyrics is not None and positions is not None and ties is not None:
                for Nindex, _ in enumerate(bar):
-                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
+                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
             elif lyrics is not None:
                for Nindex, _ in enumerate(bar):
-                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
+                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
             else:
                for Nindex, _ in enumerate(bar):
-                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex])
-      self.endPart()
+                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex])
+      self.endPart(measure)
 
    def writeTenor(self, notes, durations, lyrics=None, positions=None, ties=None):
-      self.startTenor()
+      part, measure = self.startTenor()
       for Vindex, verse in enumerate(notes):
          for Bindex, bar in enumerate(verse):
             if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
-               self.addMeasureDbl()
+               measure = self.addMeasureDbl(part)
             elif Bindex == len(verse)-1 and Vindex == len(notes)-1: # this is the very last bar; don't add a new bar
                pass
             elif Bindex != 0:
-               self.addMeasure()
+               measure = self.addMeasure(part)
             if lyrics is not None and positions is not None and ties is not None:
                for Nindex, _ in enumerate(bar):
-                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
+                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
             elif lyrics is not None:
                for Nindex, _ in enumerate(bar):
-                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
+                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
             else:
                for Nindex, _ in enumerate(bar):
-                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex])
-      self.endPart()
+                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex])
+      self.endPart(measure)
 
    def writeBass(self, notes, durations, lyrics=None, positions=None, ties=None):
-      self.startBass()
+      part, measure = self.startBass()
       for Vindex, verse in enumerate(notes):
          for Bindex, bar in enumerate(verse):
             if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
-               self.addMeasureDbl()
+               measure = self.addMeasureDbl(part)
             elif Bindex == len(verse)-1 and Vindex == len(notes)-1: # this is the very last bar; don't add a new bar
                pass
             elif Bindex != 0:
-               self.addMeasure()
+               measure = self.addMeasure(part)
             if lyrics is not None and positions is not None and ties is not None:
                for Nindex, _ in enumerate(bar):
-                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
+                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
             elif lyrics is not None:
                for Nindex, _ in enumerate(bar):
-                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
+                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
             else:
                for Nindex, _ in enumerate(bar):
-                  self.addNote(bar[Nindex], durations[Vindex][Bindex][Nindex])
-      self.endPart()
+                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex])
+      self.endPart(measure)
 
    def MIDI2Fifths(self, MIDI_Key):
       MIDI_Key = int(MIDI_Key)
