@@ -1789,8 +1789,7 @@ class DF_MusicXML:
          if tie == "start":
             tree.SubElement(notations, 'tied', attrib={'tied':'start'})
 
-   def writeSop(self, notes, durations, lyrics=None, positions=None, ties=None):
-      part, measure = self.startSoprano()
+   def writeSection(self, part, measure, notes, durations, lyrics=None, positions=None, ties=None):
       for Vindex, verse in enumerate(notes):
          for Bindex, bar in enumerate(verse):
             if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
@@ -1809,69 +1808,22 @@ class DF_MusicXML:
                for Nindex, _ in enumerate(bar):
                   self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex])
       self.endPart(measure)
+
+   def writeSop(self, notes, durations, lyrics=None, positions=None, ties=None):
+      part, measure = self.startSoprano()
+      self.writeSection(part, measure, notes, durations, lyrics, positions, ties)
 
    def writeAlto(self, notes, durations, lyrics=None, positions=None, ties=None):
       part, measure = self.startAlto()
-      for Vindex, verse in enumerate(notes):
-         for Bindex, bar in enumerate(verse):
-            if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
-               measure = self.addMeasureDbl(part)
-            elif Bindex == len(verse)-1 and Vindex == len(notes)-1: # this is the very last bar; don't add a new bar
-               pass
-            elif Bindex != 0:
-               measure = self.addMeasure(part)
-            if lyrics is not None and positions is not None and ties is not None:
-               for Nindex, _ in enumerate(bar):
-                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
-            elif lyrics is not None:
-               for Nindex, _ in enumerate(bar):
-                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
-            else:
-               for Nindex, _ in enumerate(bar):
-                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex])
-      self.endPart(measure)
+      self.writeSection(part, measure, notes, durations, lyrics, positions, ties)
 
    def writeTenor(self, notes, durations, lyrics=None, positions=None, ties=None):
       part, measure = self.startTenor()
-      for Vindex, verse in enumerate(notes):
-         for Bindex, bar in enumerate(verse):
-            if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
-               measure = self.addMeasureDbl(part)
-            elif Bindex == len(verse)-1 and Vindex == len(notes)-1: # this is the very last bar; don't add a new bar
-               pass
-            elif Bindex != 0:
-               measure = self.addMeasure(part)
-            if lyrics is not None and positions is not None and ties is not None:
-               for Nindex, _ in enumerate(bar):
-                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
-            elif lyrics is not None:
-               for Nindex, _ in enumerate(bar):
-                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
-            else:
-               for Nindex, _ in enumerate(bar):
-                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex])
-      self.endPart(measure)
+      self.writeSection(part, measure, notes, durations, lyrics, positions, ties)
 
    def writeBass(self, notes, durations, lyrics=None, positions=None, ties=None):
       part, measure = self.startBass()
-      for Vindex, verse in enumerate(notes):
-         for Bindex, bar in enumerate(verse):
-            if Bindex == len(verse)-1 and Vindex != len(notes)-1: # it's the last bar of the verse but not the last verse
-               measure = self.addMeasureDbl(part)
-            elif Bindex == len(verse)-1 and Vindex == len(notes)-1: # this is the very last bar; don't add a new bar
-               pass
-            elif Bindex != 0:
-               measure = self.addMeasure(part)
-            if lyrics is not None and positions is not None and ties is not None:
-               for Nindex, _ in enumerate(bar):
-                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex], positions[Vindex][Bindex][Nindex], ties[Vindex][Bindex][Nindex])
-            elif lyrics is not None:
-               for Nindex, _ in enumerate(bar):
-                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex], lyrics[Vindex][Bindex][Nindex])
-            else:
-               for Nindex, _ in enumerate(bar):
-                  self.addNote(measure, bar[Nindex], durations[Vindex][Bindex][Nindex])
-      self.endPart(measure)
+      self.writeSection(part, measure, notes, durations, lyrics, positions, ties)
 
    def MIDI2Fifths(self, MIDI_Key):
       MIDI_Key = int(MIDI_Key)
